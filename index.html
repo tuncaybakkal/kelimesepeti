@@ -388,25 +388,12 @@ function renderCard() {
   card.className = 'flash-card';
   card.innerHTML = `
     <div class="en-word">${word.en}</div>
-    <div class="tr-word" style="display:none">${word.tr}</div>
-    <div class="en-small" style="display:none">${word.en}</div>
-    <div class="tap-hint">Görmek için dokun</div>
+    <div class="tr-word">${word.tr}</div>
     <div class="swipe-hint left">Tekrar</div>
     <div class="swipe-hint right">Öğrendim</div>
   `;
   stack.appendChild(card);
-  cardFlipped = false;
-
-  // Tap to flip
-  card.addEventListener('click', (e) => {
-    if(Math.abs(swipeDx) > 5) return;
-    if(!cardFlipped) {
-      card.querySelector('.tr-word').style.display = 'block';
-      card.querySelector('.en-small').style.display = 'block';
-      card.querySelector('.tap-hint').style.display = 'none';
-      cardFlipped = true;
-    }
-  });
+  cardFlipped = true;
 
   // Swipe handling
   let startX, startY, swipeDx = 0;
@@ -447,9 +434,14 @@ function renderCard() {
   card.addEventListener('touchstart', onStart, {passive:true});
   card.addEventListener('touchmove', onMove, {passive:false});
   card.addEventListener('touchend', onEnd);
-  card.addEventListener('mousedown', onStart);
-  window.addEventListener('mousemove', onMove);
-  window.addEventListener('mouseup', () => { onEnd(); window.removeEventListener('mousemove', onMove); });
+
+  card.addEventListener('mousedown', (e) => {
+    onStart(e);
+    const mmove = (e2) => onMove(e2);
+    const mup = () => { onEnd(); window.removeEventListener('mousemove', mmove); window.removeEventListener('mouseup', mup); };
+    window.addEventListener('mousemove', mmove);
+    window.addEventListener('mouseup', mup);
+  });
 }
 
 function restartDeck() { buildDeck(); }
