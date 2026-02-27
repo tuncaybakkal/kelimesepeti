@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Kelime Sepeti</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f0f4f8;
+  --card-bg: #ffffff;
+  --primary: #4f46e5;
+  --learned: #10b981;
+  --review: #f43f5e;
+  --text: #1e293b;
+  --muted: #94a3b8;
+  --tab-h: 64px;
+  --radius: 20px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body { font-family: 'Nunito', sans-serif; background: var(--bg); color: var(--text); height: 100dvh; overflow: hidden; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; position: relative; }
+
+/* HEADER */
+.header { padding: 16px 20px 10px; background: var(--card-bg); border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.header h1 { font-size: 18px; font-weight: 900; color: var(--primary); }
+.header .stats { display: flex; gap: 12px; margin-top: 4px; font-size: 13px; }
+.stat-pill { background: #f1f5f9; border-radius: 20px; padding: 2px 10px; font-weight: 700; }
+.stat-pill.green { background: #d1fae5; color: #065f46; }
+.stat-pill.red { background: #ffe4e6; color: #9f1239; }
+.stat-pill.blue { background: #e0e7ff; color: #3730a3; }
+
+/* PAGES */
+.page { flex: 1; overflow: hidden; display: none; flex-direction: column; }
+.page.active { display: flex; }
+
+/* CARDS PAGE */
+.cards-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: relative; overflow: hidden; }
+.card-stack { position: relative; width: 100%; max-width: 340px; height: 240px; }
+.flash-card {
+  position: absolute; inset: 0;
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 30px; text-align: center;
+  cursor: grab; user-select: none;
+  transition: box-shadow 0.2s;
+  touch-action: none;
+}
+.flash-card .en-word { font-size: 38px; font-weight: 900; color: var(--text); }
+.flash-card .tr-word { font-size: 22px; font-weight: 700; color: var(--primary); margin-top: 12px; }
+.flash-card .en-small { font-size: 14px; color: var(--muted); margin-top: 4px; font-style: italic; }
+.flash-card .tap-hint { font-size: 12px; color: var(--muted); margin-top: 16px; }
+
+.swipe-hint {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  font-size: 28px; font-weight: 900; opacity: 0; transition: opacity 0.15s;
+  pointer-events: none; border-radius: 12px; padding: 6px 14px;
+}
+.swipe-hint.left { left: -10px; color: var(--review); background: #ffe4e6; }
+.swipe-hint.right { right: -10px; color: var(--learned); background: #d1fae5; }
+
+.card-counter { font-size: 13px; color: var(--muted); font-weight: 700; margin-bottom: 16px; }
+.action-hints { display: flex; justify-content: space-between; width: 100%; max-width: 340px; margin-top: 16px; font-size: 13px; font-weight: 700; }
+.action-hints .left-h { color: var(--review); }
+.action-hints .right-h { color: var(--learned); }
+
+.done-card { text-align: center; padding: 40px 20px; }
+.done-card .emoji { font-size: 52px; }
+.done-card h2 { font-size: 22px; font-weight: 900; margin: 12px 0 6px; }
+.done-card p { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+.btn { background: var(--primary); color: #fff; border: none; border-radius: 14px; padding: 13px 28px; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer; transition: transform 0.1s, opacity 0.1s; }
+.btn:active { transform: scale(0.97); }
+.btn.outline { background: transparent; color: var(--primary); border: 2px solid var(--primary); margin-left: 8px; }
+.btn.green { background: var(--learned); }
+.btn.red { background: var(--review); }
+
+/* FILTER BAR */
+.filter-bar { display: flex; gap: 8px; padding: 10px 16px; background: var(--card-bg); border-bottom: 1px solid #e2e8f0; flex-shrink: 0; overflow-x: auto; }
+.filter-btn { background: #f1f5f9; border: none; border-radius: 20px; padding: 5px 14px; font-size: 13px; font-weight: 700; font-family: inherit; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+.filter-btn.active { background: var(--primary); color: #fff; }
+
+/* QUIZ PAGE */
+.quiz-area { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.quiz-q { background: var(--card-bg); border-radius: var(--radius); padding: 24px; text-align: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+.quiz-q .q-label { font-size: 12px; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+.quiz-q .q-word { font-size: 36px; font-weight: 900; }
+.quiz-q .q-progress { font-size: 12px; color: var(--muted); margin-top: 8px; font-weight: 700; }
+
+.options-grid { display: flex; flex-direction: column; gap: 10px; }
+.opt-btn {
+  background: var(--card-bg); border: 2px solid #e2e8f0; border-radius: 14px;
+  padding: 14px 18px; font-size: 16px; font-weight: 700; font-family: inherit;
+  cursor: pointer; text-align: left; transition: border-color 0.15s, background 0.15s;
+  position: relative; overflow: hidden;
+}
+.opt-btn:active { transform: scale(0.98); }
+.opt-btn.correct { background: #d1fae5; border-color: var(--learned); color: #065f46; }
+.opt-btn.wrong { background: #ffe4e6; border-color: var(--review); color: #9f1239; }
+
+.quiz-score-bar { background: var(--card-bg); border-radius: var(--radius); padding: 16px 20px; display: flex; gap: 16px; align-items: center; box-shadow: 0 2px 12px rgba(0,0,0,0.06); flex-shrink: 0; }
+.score-num { font-size: 24px; font-weight: 900; color: var(--primary); }
+.score-label { font-size: 12px; color: var(--muted); font-weight: 700; }
+.score-bar-inner { flex: 1; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+.score-bar-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.3s; }
+
+.quiz-empty { text-align: center; padding: 40px 20px; }
+.quiz-empty .emoji { font-size: 48px; }
+.quiz-empty h3 { font-size: 18px; font-weight: 900; margin: 12px 0 6px; }
+.quiz-empty p { color: var(--muted); font-size: 14px; }
+
+/* LIST PAGE */
+.list-area { flex: 1; overflow-y: auto; }
+.list-search { padding: 12px 16px; background: var(--card-bg); border-bottom: 1px solid #e2e8f0; flex-shrink: 0; }
+.list-search input { width: 100%; background: #f1f5f9; border: none; border-radius: 12px; padding: 10px 14px; font-size: 14px; font-family: inherit; outline: none; }
+.word-item { display: flex; align-items: center; padding: 12px 16px; border-bottom: 1px solid #f1f5f9; background: var(--card-bg); gap: 12px; }
+.word-item .badge { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.badge.learned { background: var(--learned); }
+.badge.review { background: var(--review); }
+.badge.new { background: #e2e8f0; }
+.word-item .en { font-weight: 800; font-size: 15px; }
+.word-item .tr { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.word-item button { margin-left: auto; background: none; border: none; font-size: 18px; cursor: pointer; padding: 4px; }
+
+/* TAB BAR */
+.tab-bar { height: var(--tab-h); background: var(--card-bg); border-top: 1px solid #e2e8f0; display: flex; flex-shrink: 0; }
+.tab-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; font-family: inherit; font-size: 10px; font-weight: 700; color: var(--muted); cursor: pointer; transition: color 0.15s; }
+.tab-btn.active { color: var(--primary); }
+.tab-btn svg { width: 22px; height: 22px; }
+
+/* OVERLAY for swipe feedback */
+.swipe-overlay { position: absolute; inset: 0; border-radius: var(--radius); pointer-events: none; opacity: 0; transition: opacity 0.1s; }
+
+@keyframes flyLeft { to { transform: translateX(-120%) rotate(-20deg); opacity: 0; } }
+@keyframes flyRight { to { transform: translateX(120%) rotate(20deg); opacity: 0; } }
+.fly-left { animation: flyLeft 0.3s ease-in forwards; }
+.fly-right { animation: flyRight 0.3s ease-in forwards; }
+
+/* Responsive adjustments */
+@media (min-height: 700px) {
+  .flash-card .en-word { font-size: 44px; }
+  .card-stack { height: 260px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📚 Kelime Sepeti</h1>
+  <div class="stats">
+    <span class="stat-pill blue" id="stat-total">0 kelime</span>
+    <span class="stat-pill green" id="stat-learned">0 öğrendim</span>
+    <span class="stat-pill red" id="stat-review">0 tekrar</span>
+  </div>
+</div>
+
+<!-- KARTLAR -->
+<div class="page active" id="page-cards">
+  <div class="filter-bar">
+    <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">Tümü</button>
+    <button class="filter-btn" data-filter="new" onclick="setFilter('new')">Yeni</button>
+    <button class="filter-btn" data-filter="review" onclick="setFilter('review')">Tekrar</button>
+    <button class="filter-btn" data-filter="learned" onclick="setFilter('learned')">Öğrendim</button>
+  </div>
+  <div class="cards-area">
+    <div class="card-counter" id="card-counter"></div>
+    <div class="card-stack" id="card-stack">
+      <div id="done-view" class="done-card" style="display:none">
+        <div class="emoji">🎉</div>
+        <h2>Harika!</h2>
+        <p id="done-text"></p>
+        <button class="btn" onclick="restartDeck()">Tekrar Başla</button>
+        <button class="btn outline" onclick="setFilter('review')">Sadece Tekrarlar</button>
+      </div>
+    </div>
+    <div class="action-hints">
+      <span class="left-h">← Tekrar Gör</span>
+      <span>Kaydır</span>
+      <span class="right-h">Öğrendim →</span>
+    </div>
+  </div>
+</div>
+
+<!-- QUİZ -->
+<div class="page" id="page-quiz">
+  <div style="padding:12px 16px; background:var(--card-bg); border-bottom:1px solid #e2e8f0; flex-shrink:0; display:flex; align-items:center; justify-content:space-between;">
+    <span style="font-weight:900; font-size:15px;">Quiz</span>
+    <button class="btn" style="padding:7px 16px; font-size:13px;" onclick="startQuiz()">Yeni Quiz</button>
+  </div>
+  <div class="quiz-area" id="quiz-area">
+    <div class="quiz-empty">
+      <div class="emoji">🧠</div>
+      <h3>Quiz için hazır!</h3>
+      <p>Önce kart ekranında kelimeler öğren, sonra quiz başlat.</p>
+    </div>
+  </div>
+</div>
+
+<!-- LİSTE -->
+<div class="page" id="page-list">
+  <div class="list-search">
+    <input type="search" placeholder="Kelime ara..." id="search-input" oninput="renderList()" />
+  </div>
+  <div class="list-area" id="list-area"></div>
+</div>
+
+<!-- TAB BAR -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tab-cards" onclick="switchTab('cards')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/></svg>
+    Kartlar
+  </button>
+  <button class="tab-btn" id="tab-quiz" onclick="switchTab('quiz')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17" stroke-linecap="round" stroke-width="3"/></svg>
+    Quiz
+  </button>
+  <button class="tab-btn" id="tab-list" onclick="switchTab('list')">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6" stroke-linecap="round" stroke-width="3"/><line x1="3" y1="12" x2="3.01" y2="12" stroke-linecap="round" stroke-width="3"/><line x1="3" y1="18" x2="3.01" y2="18" stroke-linecap="round" stroke-width="3"/></svg>
+    Liste
+  </button>
+</div>
+
+<script>
+// ============ WORD DATA (1000 most common English words) ============
+const WORDS = [
+["the","bir/the"],["be","olmak"],["to","için/e"],["of","için/ın"],["and","ve"],["a","bir"],["in","içinde"],["that","o/ki"],["have","sahip olmak"],["it","o"],
+["for","için"],["not","değil"],["on","üstünde"],["with","ile"],["he","o(erkek)"],["as","olarak"],["you","sen"],["do","yapmak"],["at","de/da"],["this","bu"],
+["but","ama"],["his","onun"],["by","ile/tarafından"],["from","dan/den"],["they","onlar"],["we","biz"],["say","söylemek"],["her","onu/onun(dişi)"],["she","o(dişil)"],["or","veya"],
+["an","bir"],["will","olacak/will"],["my","benim"],["one","bir"],["all","tümü/hepsi"],["would","olurdu"],["there","orada"],["their","onların"],["what","ne"],["so","böylece/o yüzden"],
+["up","yukarı"],["out","dışarı"],["if","eğer"],["about","hakkında"],["who","kim"],["get","almak/elde etmek"],["which","hangi"],["go","gitmek"],["me","beni/bana"],["when","ne zaman"],
+["make","yapmak"],["can","yapabilmek"],["like","gibi/beğenmek"],["time","zaman"],["no","hayır/yok"],["just","sadece"],["him","onu(erkek)"],["know","bilmek"],["take","almak"],["people","insanlar"],
+["into","içine"],["year","yıl"],["your","senin"],["good","iyi"],["some","bazı"],["could","yapabilirdi"],["them","onları"],["see","görmek"],["other","diğer"],["than","daha/değil"],
+["then","sonra/o zaman"],["now","şimdi"],["look","bakmak"],["only","sadece"],["come","gelmek"],["its","onun(tarafsız)"],["over","üzerinde"],["think","düşünmek"],["also","aynı zamanda"],["back","geri/arka"],
+["after","sonra"],["use","kullanmak"],["two","iki"],["how","nasıl"],["our","bizim"],["work","çalışmak/iş"],["first","ilk"],["well","iyi/güzel"],["way","yol/yöntem"],["even","bile/hatta"],
+["new","yeni"],["want","istemek"],["because","çünkü"],["any","herhangi"],["these","bunlar"],["give","vermek"],["day","gün"],["most","en çok"],["us","bize/bizi"],["great","harika/büyük"],
+["between","arasında"],["need","ihtiyaç duymak"],["large","büyük"],["often","sıkça"],["hand","el"],["high","yüksek"],["place","yer"],["hold","tutmak"],["turn","dönmek/sıra"],["set","ayarlamak/küme"],
+["help","yardım etmek"],["play","oynamak"],["small","küçük"],["number","numara/sayı"],["off","kapalı/uzakta"],["always","her zaman"],["move","hareket etmek"],["still","hâlâ"],["try","denemek"],["ask","sormak"],
+["later","daha sonra"],["change","değişmek/değiştirmek"],["world","dünya"],["found","bulundu/kuruldu"],["show","göstermek"],["every","her"],["side","taraf"],["start","başlamak"],["long","uzun"],["keep","tutmak/devam etmek"],
+["house","ev"],["point","nokta/puan"],["city","şehir"],["play","oynamak"],["small","küçük"],["letter","mektup/harf"],["right","doğru/sağ"],["read","okumak"],["study","çalışmak/ders çalışmak"],["learn","öğrenmek"],
+["here","burada"],["both","ikisi de"],["between","arasında"],["life","hayat"],["never","asla"],["real","gerçek"],["too","da/de/çok"],["fact","gerçek/olgu"],["local","yerel"],["feel","hissetmek"],
+["put","koymak"],["end","son/bitmek"],["does","yapar"],["part","bölüm/parça"],["even","çift(sayı)/bile"],["place","yer koymak"],["act","hareket etmek/davranmak"],["why","neden"],["let","izin vermek"],["age","yaş"],
+["own","sahip olmak/kendi"],["few","birkaç"],["tell","söylemek"],["old","yaşlı/eski"],["same","aynı"],["leave","ayrılmak/bırakmak"],["different","farklı"],["follow","takip etmek"],["seem","görünmek"],["mean","anlamına gelmek"],
+["home","ev/yuva"],["live","yaşamak"],["every","her"],["child","çocuk"],["stand","ayakta durmak"],["wait","beklemek"],["week","hafta"],["open","açmak/açık"],["line","çizgi/hat"],["early","erken"],
+["thought","düşünce"],["nothing","hiçbir şey"],["face","yüz/yüzleşmek"],["water","su"],["school","okul"],["free","özgür/ücretsiz"],["friend","arkadaş"],["idea","fikir"],["door","kapı"],["body","vücat"],
+["light","ışık/hafif"],["night","gece"],["name","isim/ad"],["picture","resim"],["leave","izin"],["head","kafa/baş"],["story","hikaye"],["table","masa"],["group","grup"],["family","aile"],
+["book","kitap"],["money","para"],["point","göstermek"],["word","kelime"],["car","araba"],["food","yiyecek"],["letter","mektup"],["hear","duymak"],["job","iş"],["area","alan/bölge"],
+["room","oda"],["short","kısa"],["thing","şey"],["already","zaten"],["write","yazmak"],["enough","yeterli"],["eat","yemek yemek"],["walk","yürümek"],["talk","konuşmak"],["stop","durmak"],
+["call","aramak/çağırmak"],["mind","akıl/zihin"],["human","insan"],["city","şehir"],["run","koşmak"],["pay","ödemek"],["land","arazi/inmek"],["air","hava"],["second","ikinci/saniye"],["cut","kesmek"],
+["maybe","belki"],["bring","getirmek"],["happy","mutlu"],["street","sokak"],["hard","sert/zor"],["person","kişi"],["decide","karar vermek"],["once","bir kez"],["true","doğru/gerçek"],["voice","ses/oy"],
+["power","güç"],["town","kasaba"],["fine","iyi/para cezası"],["drive","sürmek"],["floor","zemin/kat"],["stand","yer"],["window","pencere"],["kind","tür/nazik"],["music","müzik"],["country","ülke/taşra"],
+["example","örnek"],["front","ön"],["past","geçmiş"],["cover","kapak/örtmek"],["color","renk"],["draw","çizmek"],["whole","bütün/tüm"],["easy","kolay"],["remember","hatırlamak"],["information","bilgi"],
+["lot","çok/arsa"],["problem","sorun"],["hour","saat"],["season","mevsim"],["better","daha iyi"],["question","soru"],["answer","cevap"],["black","siyah"],["white","beyaz"],["red","kırmızı"],
+["blue","mavi"],["green","yeşil"],["beautiful","güzel"],["important","önemli"],["big","büyük"],["young","genç"],["strong","güçlü"],["cold","soğuk"],["warm","sıcak/ılık"],["hot","sıcak"],
+["angry","kızgın"],["sad","üzgün"],["excited","heyecanlı"],["tired","yorgun"],["busy","meşgul"],["ready","hazır"],["sick","hasta"],["lost","kaybolmuş"],["safe","güvenli"],["sorry","özür dilerim"],
+["please","lütfen"],["thank","teşekkür etmek"],["hello","merhaba"],["bye","hoşçakal"],["yes","evet"],["maybe","belki"],["okay","tamam"],["sure","elbette"],["problem","sorun yok"],["morning","sabah"],
+["evening","akşam"],["afternoon","öğleden sonra"],["today","bugün"],["tomorrow","yarın"],["yesterday","dün"],["next","gelecek/sonraki"],["last","son/geçen"],["month","ay"],["hour","saat"],["minute","dakika"],
+["fast","hızlı"],["slow","yavaş"],["near","yakın"],["far","uzak"],["inside","içeride"],["outside","dışarıda"],["above","üstünde"],["below","altında"],["left","sol"],["right","sağ"],
+["north","kuzey"],["south","güney"],["east","doğu"],["west","batı"],["top","tepe/üst"],["bottom","alt/dip"],["middle","orta"],["around","etrafında"],["through","içinden"],["across","karşıya/genelinde"],
+["cat","kedi"],["dog","köpek"],["bird","kuş"],["fish","balık"],["horse","at"],["cow","inek"],["pig","domuz"],["sheep","koyun"],["chicken","tavuk"],["lion","aslan"],
+["tiger","kaplan"],["bear","ayı"],["wolf","kurt"],["fox","tilki"],["rabbit","tavşan"],["mouse","fare"],["snake","yılan"],["elephant","fil"],["monkey","maymun"],["tree","ağaç"],
+["flower","çiçek"],["grass","çimen"],["mountain","dağ"],["river","nehir"],["sea","deniz"],["lake","göl"],["forest","orman"],["park","park"],["garden","bahçe"],["sun","güneş"],
+["moon","ay"],["star","yıldız"],["cloud","bulut"],["rain","yağmur"],["snow","kar"],["wind","rüzgar"],["storm","fırtına"],["fire","ateş"],["ice","buz"],["sand","kum"],
+["hospital","hastane"],["doctor","doktor"],["nurse","hemşire"],["medicine","ilaç"],["office","ofis/büro"],["market","market"],["bank","banka"],["hotel","otel"],["restaurant","restoran"],["airport","havalimanı"],
+["station","istasyon"],["bridge","köprü"],["road","yol"],["bus","otobüs"],["train","tren"],["plane","uçak"],["ship","gemi"],["bike","bisiklet"],["phone","telefon"],["computer","bilgisayar"],
+["internet","internet"],["message","mesaj"],["email","e-posta"],["website","websitesi"],["button","düğme"],["screen","ekran"],["keyboard","klavye"],["mouse","fare(bilg.)"],["camera","kamera"],["battery","pil/batarya"],
+["breakfast","kahvaltı"],["lunch","öğle yemeği"],["dinner","akşam yemeği"],["bread","ekmek"],["milk","süt"],["coffee","kahve"],["tea","çay"],["juice","meyve suyu"],["cheese","peynir"],["egg","yumurta"],
+["meat","et"],["fruit","meyve"],["vegetable","sebze"],["rice","pirinç"],["soup","çorba"],["cake","kek"],["chocolate","çikolata"],["sugar","şeker"],["salt","tuz"],["oil","yağ"],
+["shirt","gömlek"],["dress","elbise"],["pants","pantolon"],["shoes","ayakkabı"],["hat","şapka"],["coat","palto"],["bag","çanta"],["glasses","gözlük"],["watch","saat(kol)"],["ring","yüzük"],
+["subject","konu/ders"],["class","sınıf/ders"],["teacher","öğretmen"],["student","öğrenci"],["lesson","ders"],["exam","sınav"],["grade","not/sınıf"],["homework","ödev"],["project","proje"],["university","üniversite"],
+["health","sağlık"],["exercise","egzersiz"],["sport","spor"],["game","oyun"],["team","takım"],["win","kazanmak"],["lose","kaybetmek"],["score","skor"],["player","oyuncu"],["match","maç/eşleşmek"],
+["art","sanat"],["music","müzik"],["movie","film"],["song","şarkı"],["dance","dans"],["book","kitap"],["magazine","dergi"],["news","haber"],["story","hikaye"],["character","karakter"],
+["love","sevmek/aşk"],["hate","nefret etmek"],["fear","korku/korkmak"],["hope","umut"],["trust","güvenmek/güven"],["believe","inanmak"],["understand","anlamak"],["explain","açıklamak"],["describe","tanımlamak"],["compare","karşılaştırmak"],
+["agree","katılmak"],["disagree","katılmamak"],["suggest","önermek"],["recommend","tavsiye etmek"],["choose","seçmek"],["decide","karar vermek"],["plan","planlamak/plan"],["organize","organize etmek"],["manage","yönetmek"],["control","kontrol etmek"],
+["build","inşa etmek"],["create","oluşturmak"],["design","tasarlamak/tasarım"],["develop","geliştirmek"],["improve","iyileştirmek"],["increase","artırmak"],["decrease","azaltmak"],["reduce","azaltmak"],["grow","büyümek/yetiştirmek"],["produce","üretmek"],
+["sell","satmak"],["buy","satın almak"],["spend","harcamak"],["save","kaydetmek/biriktirmek"],["earn","kazanmak"],["invest","yatırım yapmak"],["trade","ticaret/takas"],["price","fiyat"],["cost","maliyet/maliyeti olmak"],["value","değer"],
+["happy","mutlu"],["unhappy","mutsuz"],["excited","heyecanlı"],["nervous","gergin"],["worried","endişeli"],["surprised","şaşırmış"],["confused","kafası karışık"],["interested","ilgilenen"],["bored","sıkılmış"],["proud","gururlu"],
+["perfect","mükemmel"],["simple","basit"],["complex","karmaşık"],["possible","mümkün"],["impossible","imkânsız"],["necessary","gerekli"],["useful","kullanışlı"],["beautiful","güzel"],["ugly","çirkin"],["clean","temiz"],
+["dirty","kirli"],["full","dolu"],["empty","boş"],["heavy","ağır"],["light","hafif"],["loud","gürültülü"],["quiet","sessiz"],["dark","karanlık"],["bright","parlak/aydınlık"],["sharp","keskin"],
+["soft","yumuşak"],["hard","sert"],["smooth","pürüzsüz"],["rough","pürüzlü/kaba"],["wet","ıslak"],["dry","kuru"],["fresh","taze"],["stale","bayat"],["sweet","tatlı"],["sour","ekşi"],
+["bitter","acı"],["spicy","baharatlı"],["salty","tuzlu"],["rich","zengin"],["poor","fakir"],["healthy","sağlıklı"],["sick","hasta"],["alive","canlı"],["dead","ölü"],["real","gerçek"],
+["special","özel"],["normal","normal"],["common","yaygın"],["rare","nadir"],["public","halka açık"],["private","özel/mahrem"],["national","ulusal"],["international","uluslararası"],["modern","modern"],["traditional","geleneksel"],
+["sense","anlam/duyu"],["reason","sebep/akıl"],["result","sonuç"],["effect","etki"],["purpose","amaç"],["goal","hedef"],["plan","plan"],["method","yöntem"],["process","süreç"],["system","sistem"],
+["society","toplum"],["culture","kültür"],["economy","ekonomi"],["history","tarih"],["science","bilim"],["technology","teknoloji"],["nature","doğa"],["environment","çevre"],["climate","iklim"],["energy","enerji"],
+["government","hükümet"],["law","yasa/hukuk"],["politics","siyaset"],["election","seçim"],["leader","lider"],["community","topluluk"],["organization","kuruluş"],["company","şirket"],["industry","endüstri"],["market","pazar"],
+["situation","durum"],["condition","koşul/durum"],["relationship","ilişki"],["communication","iletişim"],["experience","deneyim"],["knowledge","bilgi/bilgelik"],["skill","beceri"],["ability","yetenek"],["opportunity","fırsat"],["challenge","zorluk/meydan okuma"],
+["support","destek/desteklemek"],["provide","sağlamak"],["offer","teklif etmek/önermek"],["receive","almak"],["send","göndermek"],["share","paylaşmak"],["connect","bağlanmak"],["meet","tanışmak/buluşmak"],["join","katılmak"],["include","dahil etmek"],
+["begin","başlamak"],["finish","bitirmek/tamamlamak"],["continue","devam etmek"],["return","dönmek/iade etmek"],["happen","olmak/gerçekleşmek"],["become","olmak(dönüşmek)"],["remain","kalmak"],["appear","görünmek"],["disappear","kaybolmak"],["exist","var olmak"],
+["notice","fark etmek"],["recognize","tanımak"],["identify","belirlemek/tanımlamak"],["solve","çözmek"],["fix","tamir etmek/düzeltmek"],["break","kırmak/bozmak"],["lose","kaybetmek"],["find","bulmak"],["search","aramak"],["discover","keşfetmek"],
+["check","kontrol etmek"],["test","test etmek/sınamak"],["measure","ölçmek"],["count","saymak"],["add","eklemek"],["remove","çıkarmak/kaldırmak"],["replace","değiştirmek/yerini almak"],["repeat","tekrarlamak"],["practice","pratik yapmak"],["prepare","hazırlamak"],
+["brother","erkek kardeş"],["sister","kız kardeş"],["mother","anne"],["father","baba"],["son","oğul"],["daughter","kız çocuğu"],["wife","eş(kadın)"],["husband","eş(erkek)"],["baby","bebek"],["parent","ebeveyn"],
+["grandfather","büyükbaba"],["grandmother","büyükanne"],["uncle","amca/dayı"],["aunt","teyze/hala"],["cousin","kuzen"],["neighbor","komşu"],["colleague","iş arkadaşı"],["boss","patron/amir"],["customer","müşteri"],["guest","misafir"],
+["minute","dakika"],["second","saniye"],["morning","sabah"],["noon","öğlen"],["midnight","gece yarısı"],["weekend","hafta sonu"],["holiday","tatil/bayram"],["birthday","doğum günü"],["spring","ilkbahar"],["summer","yaz"],
+["autumn","sonbahar"],["winter","kış"],["century","yüzyıl"],["decade","on yıl"],["past","geçmiş"],["present","şimdiki zaman/hediye"],["future","gelecek"],["deadline","son tarih"],["schedule","program/takvim"],["appointment","randevu"],
+["position","pozisyon/konum"],["address","adres"],["direction","yön/talimat"],["distance","mesafe"],["speed","hız"],["weight","ağırlık"],["size","boyut"],["shape","şekil"],["length","uzunluk"],["width","genişlik"],
+["addition","ek/toplama"],["difference","fark"],["solution","çözüm"],["choice","seçim"],["opinion","görüş/fikir"],["decision","karar"],["agreement","anlaşma"],["argument","tartışma/argüman"],["conversation","konuşma"],["discussion","tartışma(sakin)"],
+["success","başarı"],["failure","başarısızlık"],["mistake","hata"],["accident","kaza"],["emergency","acil durum"],["danger","tehlike"],["risk","risk"],["chance","şans/olasılık"],["luck","şans"],["effort","çaba/gayret"],
+["attention","dikkat"],["focus","odaklanmak/odak"],["memory","bellek/anı"],["thought","düşünce"],["feeling","his/duygu"],["emotion","duygu"],["attitude","tutum/tavır"],["behavior","davranış"],["reaction","tepki"],["response","yanıt/tepki"],
+["quality","kalite"],["quantity","miktar"],["type","tür/çeşit"],["category","kategori"],["level","seviye/kat"],["stage","aşama/sahne"],["step","adım"],["phase","aşama/evre"],["period","dönem/periyot"],["section","bölüm"],
+["detail","ayrıntı"],["feature","özellik"],["function","işlev/fonksiyon"],["structure","yapı"],["form","form/biçim"],["pattern","desen/kalıp"],["style","stil"],["model","model"],["standard","standart"],["rule","kural"],
+];
+
+// Remove duplicates by English word
+const wordMap = {};
+WORDS.forEach(([en,tr]) => { if(!wordMap[en]) wordMap[en] = tr; });
+const ALL_WORDS = Object.entries(wordMap).map(([en,tr]) => ({en,tr}));
+
+// ============ STATE ============
+const STORAGE_KEY = 'kelime_sepeti_v1';
+let state = {
+  learned: {}, // en -> true
+  review: {},  // en -> true
+};
+
+function loadState() {
+  try { const s = localStorage.getItem(STORAGE_KEY); if(s) state = JSON.parse(s); } catch(e) {}
+}
+function saveState() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+function getStatus(en) {
+  if(state.learned[en]) return 'learned';
+  if(state.review[en]) return 'review';
+  return 'new';
+}
+function setLearned(en) { state.learned[en] = true; delete state.review[en]; saveState(); updateStats(); }
+function setReview(en) { state.review[en] = true; delete state.learned[en]; saveState(); updateStats(); }
+
+function updateStats() {
+  const total = ALL_WORDS.length;
+  const learned = Object.keys(state.learned).length;
+  const review = Object.keys(state.review).length;
+  document.getElementById('stat-total').textContent = total + ' kelime';
+  document.getElementById('stat-learned').textContent = learned + ' öğrendim';
+  document.getElementById('stat-review').textContent = review + ' tekrar';
+}
+
+// ============ CARDS ============
+let deck = [];
+let deckIndex = 0;
+let currentFilter = 'all';
+let cardFlipped = false;
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  buildDeck();
+}
+
+function buildDeck() {
+  deck = ALL_WORDS.filter(w => {
+    const s = getStatus(w.en);
+    if(currentFilter === 'all') return true;
+    return s === currentFilter;
+  });
+  // Shuffle
+  for(let i=deck.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[deck[i],deck[j]]=[deck[j],deck[i]];}
+  deckIndex = 0;
+  cardFlipped = false;
+  renderCard();
+}
+
+function renderCard() {
+  const stack = document.getElementById('card-stack');
+  const doneView = document.getElementById('done-view');
+  // Remove previous card
+  const prev = stack.querySelector('.flash-card');
+  if(prev) prev.remove();
+
+  updateStats();
+  const counter = document.getElementById('card-counter');
+
+  if(deckIndex >= deck.length) {
+    doneView.style.display = 'flex';
+    doneView.style.flexDirection = 'column';
+    doneView.style.alignItems = 'center';
+    const learned = Object.keys(state.learned).length;
+    document.getElementById('done-text').textContent = `${learned} kelime öğrendin! Tüm kartları tamamladın.`;
+    counter.textContent = '';
+    return;
+  }
+  doneView.style.display = 'none';
+
+  const word = deck[deckIndex];
+  counter.textContent = `${deckIndex+1} / ${deck.length}`;
+
+  const card = document.createElement('div');
+  card.className = 'flash-card';
+  card.innerHTML = `
+    <div class="en-word">${word.en}</div>
+    <div class="tr-word" style="display:none">${word.tr}</div>
+    <div class="en-small" style="display:none">${word.en}</div>
+    <div class="tap-hint">Görmek için dokun</div>
+    <div class="swipe-hint left">Tekrar</div>
+    <div class="swipe-hint right">Öğrendim</div>
+  `;
+  stack.appendChild(card);
+  cardFlipped = false;
+
+  // Tap to flip
+  card.addEventListener('click', (e) => {
+    if(Math.abs(swipeDx) > 5) return;
+    if(!cardFlipped) {
+      card.querySelector('.tr-word').style.display = 'block';
+      card.querySelector('.en-small').style.display = 'block';
+      card.querySelector('.tap-hint').style.display = 'none';
+      cardFlipped = true;
+    }
+  });
+
+  // Swipe handling
+  let startX, startY, swipeDx = 0;
+  const onStart = (e) => {
+    const t = e.touches ? e.touches[0] : e;
+    startX = t.clientX; startY = t.clientY; swipeDx = 0;
+  };
+  const onMove = (e) => {
+    if(!startX) return;
+    const t = e.touches ? e.touches[0] : e;
+    swipeDx = t.clientX - startX;
+    const swipeDy = t.clientY - startY;
+    if(Math.abs(swipeDx) < 8) return;
+    e.preventDefault();
+    card.style.transform = `translateX(${swipeDx}px) rotate(${swipeDx*0.05}deg)`;
+    const ratio = Math.min(Math.abs(swipeDx)/80, 1);
+    card.querySelector('.swipe-hint.left').style.opacity = swipeDx < 0 ? ratio : 0;
+    card.querySelector('.swipe-hint.right').style.opacity = swipeDx > 0 ? ratio : 0;
+  };
+  const onEnd = () => {
+    if(!startX) return;
+    startX = null;
+    if(swipeDx > 60) {
+      setLearned(deck[deckIndex].en);
+      card.classList.add('fly-right');
+      setTimeout(() => { deckIndex++; renderCard(); }, 300);
+    } else if(swipeDx < -60) {
+      setReview(deck[deckIndex].en);
+      card.classList.add('fly-left');
+      setTimeout(() => { deckIndex++; renderCard(); }, 300);
+    } else {
+      card.style.transform = '';
+      card.querySelector('.swipe-hint.left').style.opacity = 0;
+      card.querySelector('.swipe-hint.right').style.opacity = 0;
+      swipeDx = 0;
+    }
+  };
+  card.addEventListener('touchstart', onStart, {passive:true});
+  card.addEventListener('touchmove', onMove, {passive:false});
+  card.addEventListener('touchend', onEnd);
+  card.addEventListener('mousedown', onStart);
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', () => { onEnd(); window.removeEventListener('mousemove', onMove); });
+}
+
+function restartDeck() { buildDeck(); }
+
+// ============ QUIZ ============
+let quiz = { questions:[], index:0, score:0, answered:false };
+
+function startQuiz() {
+  const learnedWords = ALL_WORDS.filter(w => state.learned[w.en]);
+  if(learnedWords.length < 4) {
+    document.getElementById('quiz-area').innerHTML = `<div class="quiz-empty"><div class="emoji">📚</div><h3>Yeterli kelime yok</h3><p>Quiz için en az 4 kelime öğrenmen gerekiyor. Şu an: ${learnedWords.length}</p></div>`;
+    return;
+  }
+  // Build 20 questions (or less)
+  const shuffled = [...learnedWords].sort(() => Math.random()-0.5);
+  const qCount = Math.min(20, shuffled.length);
+  quiz.questions = shuffled.slice(0, qCount).map(word => {
+    // wrong options from all words
+    const others = ALL_WORDS.filter(w => w.en !== word.en).sort(() => Math.random()-0.5).slice(0,3);
+    const options = [...others, word].sort(() => Math.random()-0.5);
+    return { word, options };
+  });
+  quiz.index = 0; quiz.score = 0; quiz.answered = false;
+  renderQuiz();
+}
+
+function renderQuiz() {
+  const area = document.getElementById('quiz-area');
+  if(quiz.index >= quiz.questions.length) {
+    const pct = Math.round(quiz.score/quiz.questions.length*100);
+    area.innerHTML = `
+      <div class="quiz-q">
+        <div class="emoji" style="font-size:48px;margin-bottom:12px">${pct>=70?'🏆':'💪'}</div>
+        <div style="font-size:24px;font-weight:900;">${quiz.score}/${quiz.questions.length}</div>
+        <div style="font-size:14px;color:var(--muted);margin-top:4px">%${pct} doğru</div>
+      </div>
+      <button class="btn" style="width:100%;padding:16px;font-size:16px" onclick="startQuiz()">Tekrar Başla</button>`;
+    return;
+  }
+  const q = quiz.questions[quiz.index];
+  area.innerHTML = `
+    <div class="quiz-score-bar">
+      <div><div class="score-num">${quiz.score}</div><div class="score-label">PUAN</div></div>
+      <div class="score-bar-inner"><div class="score-bar-fill" style="width:${quiz.index/quiz.questions.length*100}%"></div></div>
+      <div><div class="score-num">${quiz.questions.length-quiz.index}</div><div class="score-label">KALDI</div></div>
+    </div>
+    <div class="quiz-q">
+      <div class="q-label">Bu kelimenin Türkçe karşılığı nedir?</div>
+      <div class="q-word">${q.word.en}</div>
+      <div class="q-progress">Soru ${quiz.index+1} / ${quiz.questions.length}</div>
+    </div>
+    <div class="options-grid" id="opts">
+      ${q.options.map(opt => `<button class="opt-btn" onclick="answerQuiz('${opt.en}','${q.word.en}',this)">${opt.tr}</button>`).join('')}
+    </div>`;
+}
+
+function answerQuiz(chosen, correct, btn) {
+  if(quiz.answered) return;
+  quiz.answered = true;
+  const opts = document.querySelectorAll('.opt-btn');
+  opts.forEach(b => {
+    const words = quiz.questions[quiz.index].options;
+    // match by text content
+    const matchWord = quiz.questions[quiz.index].options.find(o => o.tr === b.textContent);
+    if(matchWord && matchWord.en === correct) b.classList.add('correct');
+    else if(b === btn) b.classList.add('wrong');
+    b.style.pointerEvents = 'none';
+  });
+  if(chosen === correct) quiz.score++;
+  setTimeout(() => { quiz.index++; quiz.answered = false; renderQuiz(); }, 900);
+}
+
+// ============ LIST ============
+function renderList() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const area = document.getElementById('list-area');
+  const filtered = ALL_WORDS.filter(w => !q || w.en.includes(q) || w.tr.includes(q));
+  area.innerHTML = filtered.slice(0,200).map(w => {
+    const s = getStatus(w.en);
+    return `<div class="word-item">
+      <div class="badge ${s}"></div>
+      <div><div class="en">${w.en}</div><div class="tr">${w.tr}</div></div>
+      <button onclick="toggleWord('${w.en}')">${s==='learned'?'✅':s==='review'?'🔄':'○'}</button>
+    </div>`;
+  }).join('');
+}
+
+function toggleWord(en) {
+  const s = getStatus(en);
+  if(s === 'learned') { delete state.learned[en]; }
+  else { setLearned(en); }
+  saveState(); updateStats(); renderList();
+}
+
+// ============ TABS ============
+function switchTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.getElementById('tab-'+tab).classList.add('active');
+  if(tab === 'list') renderList();
+}
+
+// ============ INIT ============
+loadState();
+buildDeck();
+updateStats();
+</script>
+</body>
+</html>
